@@ -21,6 +21,30 @@ describe('postcss-squircle', () => {
 		);
 	});
 
+	it('keeps a calc() radius whole inside the scaled calc()', async () => {
+		expect(await run('.a { border-radius: squircle(calc(var(--r) * 2)); }')).toContain(
+			'border-radius: calc(calc(var(--r) * 2) * 1.8)',
+		);
+	});
+
+	it('emits @supports after the rule, leaving later declarations in it', async () => {
+		const root = (
+			await postcss([squircle()]).process(
+				'.a { display: flex; border-radius: squircle(8px); box-shadow: none; }',
+				{ from: 'in.css' },
+			)
+		).root;
+		const [rule, supports] = root.nodes;
+
+		expect(rule?.toString()).toBe('.a { display: flex; border-radius: 8px; box-shadow: none; }');
+		expect(supports?.type).toBe('atrule');
+	});
+
+	it('ignores squircle() outside border-radius', async () => {
+		const css = '.a { --radius: squircle(8px); }';
+		expect(await run(css)).toBe(css);
+	});
+
 	it('leaves other declarations and plain radii alone', async () => {
 		const css = '.a { border-radius: 8px; content: "squircle(1px)"; }';
 		expect(await run(css)).toBe(css);
