@@ -65,11 +65,17 @@ The package is ESM-only. A CommonJS config gets it from `require(...).default` o
 works in plain CSS, CSS modules and any preprocessor; a mixin would tie it to one
 preprocessor's syntax.
 
-**Why 1.8×.** At the same radius a superellipse (n=4) bulges past a circular arc at 45°
-but tucks in tighter at the apex, so it reads sharper. Matching the two corners' distance
-from the box corner at 45° gives (1 − 2^−0.5) / (1 − 2^−0.25) ≈ 1.84. A scale of 2 reads
-visibly rounder than plain corners beside it; 1.8 is the perceptual compromise, also
-making up for the area lost at the outer points.
+**Why the radius is scaled.** `corner-shape: squircle` keeps `border-radius` as the size
+of the corner, but a superellipse (n=4) fills that corner further than a circular arc: it
+bulges out toward the box corner at 45° and tucks in tighter at the apex, so at the same
+radius it reads noticeably sharper. Unscaled, one radius token would look rounder in
+browsers without `corner-shape` than in browsers with it, and a squircle would look
+sharper than the plain rounded corners beside it. Scaling keeps a radius token at the
+same perceived roundness whichever corner the browser draws.
+
+**Why 1.8.** Matching the two corners' distance from the box corner at 45° gives
+(1 − 2^−0.5) / (1 − 2^−0.25) ≈ 1.84. 1.8 is the perceptual compromise, also making up for
+the area lost at the outer points; 2 already reads visibly rounder than plain corners.
 
 **Why `@supports` goes after the rule.** Emitting it next to the declaration would nest
 an at-rule inside the rule and split it: everything after `border-radius` lands below the
