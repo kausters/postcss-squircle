@@ -1,0 +1,22 @@
+{
+	"include": ["src", "test", "*.ts"],
+	"compilerOptions": {
+		"target": "ES2022",
+		"lib": ["ES2022"],
+		"module": "NodeNext",
+		"moduleResolution": "NodeNext",
+		"types": [],
+		"verbatimModuleSyntax": true,
+		"isolatedModules": true,
+		"noEmit": true,
+		"allowImportingTsExtensions": true,
+		"skipLibCheck": true,
+
+		"strict": true,
+		"noUncheckedIndexedAccess": true,
+		"noUnusedLocals": true,
+		"noUnusedParameters": true,
+		"noFallthroughCasesInSwitch": true,
+		"noUncheckedSideEffectImports": true
+	}
+}

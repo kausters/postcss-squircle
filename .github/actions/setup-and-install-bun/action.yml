@@ -1,0 +1,50 @@
+name: 'Set up and Install Bun'
+description: 'Sets up Node (runtime) and Bun (package manager) and installs dependencies'
+
+runs:
+  using: 'composite'
+  steps:
+    # Bun is the package manager only; scripts run on Node, and .node-version
+    # stays the single source of truth for which one. Skip setup-node when the
+    # runner already ships that version; fall back to installing it otherwise
+    # rather than silently following whatever GitHub ships.
+    - name: Check preinstalled Node
+      id: node
+      shell: bash
+      run: |
+        want=$(tr -d '[:space:]v' < .node-version)
+        # `|| true` matters: composite bash steps run with -e -o pipefail, so
+        # on a runner with no node at all the failing substitution would abort
+        # the step before it could reach the install-it branch below.
+        have=$(node --version 2>/dev/null | tr -d 'v') || true
+        # Compare only as many components as .node-version pins, so a bare
+        # "24" matches 24.x.y but "24.5" would not match 24.6.0.
+        parts=$(echo "$want" | awk -F. '{print NF}')
+        have_pinned=$(echo "$have" | cut -d. -f1-"$parts")
+        if [ -n "$have" ] && [ "$want" = "$have_pinned" ]; then
+          echo "Runner ships Node ${have}, matching .node-version (${want}) -- skipping setup-node"
+          echo "matches=true" >> "$GITHUB_OUTPUT"
+        else
+          echo "Runner ships Node ${have:-none}, want ${want} -- installing it"
+          echo "matches=false" >> "$GITHUB_OUTPUT"
+        fi
+
+    - name: Setup Node
+      if: steps.node.outputs.matches != 'true'
+      uses: actions/setup-node@v5
+      with:
+        node-version-file: .node-version
+
+    # Version comes from .bun-version, which setup-bun reads natively, so CI
+    # and a local checkout resolve the lockfile with the same Bun rather than
+    # with whatever `latest` happens to be that week.
+    - name: Setup Bun
+      uses: oven-sh/setup-bun@v2
+
+    # No actions/cache here on purpose: a fresh `bun install` is no slower
+    # than restoring node_modules from cache, since Bun downloads and extracts
+    # in parallel. Caching only won while better-sqlite3 compiled from source;
+    # with that gone there is nothing left for it to save.
+    - name: Install dependencies
+      shell: bash
+      run: bun install --frozen-lockfile

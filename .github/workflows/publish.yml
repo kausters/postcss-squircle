@@ -1,0 +1,51 @@
+name: Publish
+run-name: Publish `${{ github.event.release.tag_name }}`
+
+# Publishing a release (not a prerelease) packs its tag and attaches the
+# tarball to that release. Consumers depend on its download URL:
+#   https://github.com/kausters/postcss-squircle/releases/download/<version>/package.tgz
+on:
+  release:
+    types: [released]
+
+jobs:
+  publish:
+    runs-on: ubuntu-26.04-arm
+    concurrency:
+      group: publish
+      cancel-in-progress: false
+    permissions:
+      contents: write
+    env:
+      TAG: ${{ github.event.release.tag_name }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.release.tag_name }}
+
+      - name: Set up and Install Bun
+        uses: ./.github/actions/setup-and-install-bun
+
+      - name: Test
+        run: bun run test
+
+      # package.json holds only the major.minor floor that get-next-version
+      # reads; the tag carries the full version, so the tarball takes it from
+      # there.
+      - name: Stamp version
+        run: |
+          jq --arg version "$TAG" '.version = $version' package.json > "$RUNNER_TEMP/package.json"
+          mv "$RUNNER_TEMP/package.json" package.json
+
+      # `prepack` builds dist/. A fixed asset name keeps the download URL
+      # predictable: only the tag segment changes between versions.
+      - name: Pack
+        run: bun pm pack --filename package.tgz
+
+      - name: Attach tarball
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "$TAG" package.tgz --clobber
+
+      - name: Write summary
+        run: echo "Attached \`package.tgz\` to [\`$TAG\`](${{ github.event.release.html_url }})" >> "$GITHUB_STEP_SUMMARY"

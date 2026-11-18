@@ -1,0 +1,39 @@
+{
+	"name": "@kausters/postcss-squircle",
+	"version": "1.0.0",
+	"description": "PostCSS plugin that expands border-radius: squircle() into a corner-shape progressive enhancement",
+	"license": "MIT",
+	"files": [
+		"dist"
+	],
+	"type": "module",
+	"exports": {
+		".": {
+			"types": "./dist/index.d.ts",
+			"default": "./dist/index.js"
+		}
+	},
+	"scripts": {
+		"build": "tsc -p tsconfig.build.json",
+		"prepack": "bun run build",
+		"test": "vitest run",
+		"format": "oxfmt",
+		"lint": "oxlint --report-unused-disable-directives",
+		"tscheck": "tsc --noEmit"
+	},
+	"devDependencies": {
+		"lefthook": "^2.2.2",
+		"oxfmt": "^0.79.0",
+		"oxlint": "^1.94.0",
+		"oxlint-tsgolint": "^7.0.2007",
+		"postcss": "^8.5.33",
+		"typescript": "^7.0.2",
+		"vitest": "^5.1.1"
+	},
+	"peerDependencies": {
+		"postcss": "^8.4.0"
+	},
+	"engines": {
+		"node": ">=20.19"
+	}
+}

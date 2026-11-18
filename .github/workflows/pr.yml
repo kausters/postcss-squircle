@@ -1,0 +1,41 @@
+name: PR Checks
+run-name: ${{ github.event.pull_request.title }}
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened, ready_for_review]
+
+concurrency:
+  group: pr-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-26.04-arm
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up and Install Bun
+        uses: ./.github/actions/setup-and-install-bun
+
+      - name: Type check
+        run: bun run tscheck
+
+      - name: Format check
+        run: bun run format --check
+
+      - name: Lint
+        run: bun run lint --deny-warnings
+
+      - name: Test
+        run: bun run test
+
+      # Packs exactly what publish.yml would attach, so a broken build or a
+      # missing dist/ file fails here rather than on release.
+      - name: Pack
+        run: bun pm pack --filename package.tgz

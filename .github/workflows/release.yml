@@ -1,0 +1,81 @@
+name: Release
+concurrency: ${{ github.workflow }}
+
+# Keeps one draft release ahead of main: every push retargets it at the new
+# head with regenerated notes. Publishing the draft is what packs and attaches
+# the tarball (publish.yml). Versions come from .github/actions/get-next-version.
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - '.github/**'
+      - '**.md'
+  workflow_dispatch:
+
+jobs:
+  release:
+    runs-on: ubuntu-slim
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+
+      - name: Get next version
+        id: version
+        uses: ./.github/actions/get-next-version
+
+      - name: Find existing bot draft release
+        id: check-draft
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          DRAFT_TAG=$(gh api repos/{owner}/{repo}/releases --jq '[.[] | select(.draft==true) | select(.author.login=="github-actions[bot]") | .tag_name] | first // empty')
+          echo "draft-tag=$DRAFT_TAG" >> $GITHUB_OUTPUT
+
+      - name: Generate release notes
+        id: notes
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          NOTES=$(gh api repos/{owner}/{repo}/releases/generate-notes \
+            -f tag_name="$VERSION" \
+            -f target_commitish="${{ github.sha }}" \
+            --jq '.body')
+          echo "body<<EOF" >> $GITHUB_OUTPUT
+          echo "$NOTES" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Update existing draft release
+        if: steps.check-draft.outputs.draft-tag != ''
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.version.outputs.version }}
+          NOTES_BODY: ${{ steps.notes.outputs.body }}
+        run: |
+          gh release edit "${{ steps.check-draft.outputs.draft-tag }}" \
+            --tag "$VERSION" \
+            --target ${{ github.sha }} \
+            --title "$VERSION" \
+            --notes "$NOTES_BODY"
+
+      - name: Create draft release
+        if: steps.check-draft.outputs.draft-tag == ''
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.version.outputs.version }}
+          NOTES_BODY: ${{ steps.notes.outputs.body }}
+        run: |
+          gh release create "$VERSION" \
+            --draft \
+            --target ${{ github.sha }} \
+            --title "$VERSION" \
+            --notes "$NOTES_BODY"
