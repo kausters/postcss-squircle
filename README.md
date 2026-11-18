@@ -70,7 +70,7 @@ any preprocessor.
 but tucks in tighter at the apex, so it reads sharper. Matching the two corners' distance
 from the box corner at 45° gives (1 − 2^−0.5) / (1 − 2^−0.25) ≈ 1.84. The first version
 used 2, which looked visibly rounder than the plain corners next to it; 1.8 is the
-perceptual compromise, also making up for the area the squircle loses at the apex.
+perceptual compromise, also making up for the area lost at the outer points.
 
 **Why `@supports` goes after the rule.** Emitting it next to the declaration nests an
 at-rule inside the rule and splits it: everything after `border-radius` lands below the
