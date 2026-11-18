@@ -57,23 +57,22 @@ left as written. Outside a style rule (say, in an at-rule body) the value is unw
 to the plain radius with no `@supports` block, since there is no selector to repeat.
 
 The package is ESM-only. A CommonJS config gets it from `require(...).default` on Node
-20.19+. Configs that name plugins by string and load them themselves (Next.js does) are
-untested.
+20.19+.
 
 ## Design notes
 
-**Why a function, not a mixin.** It began as an SCSS mixin. Spelling it as a
-`border-radius` value keeps call sites readable and works in plain CSS, CSS modules and
-any preprocessor.
+**Why a function, not a mixin.** A `border-radius` value keeps call sites readable and
+works in plain CSS, CSS modules and any preprocessor; a mixin would tie it to one
+preprocessor's syntax.
 
 **Why 1.8×.** At the same radius a superellipse (n=4) bulges past a circular arc at 45°
 but tucks in tighter at the apex, so it reads sharper. Matching the two corners' distance
-from the box corner at 45° gives (1 − 2^−0.5) / (1 − 2^−0.25) ≈ 1.84. The first version
-used 2, which looked visibly rounder than the plain corners next to it; 1.8 is the
-perceptual compromise, also making up for the area lost at the outer points.
+from the box corner at 45° gives (1 − 2^−0.5) / (1 − 2^−0.25) ≈ 1.84. A scale of 2 reads
+visibly rounder than plain corners beside it; 1.8 is the perceptual compromise, also
+making up for the area lost at the outer points.
 
-**Why `@supports` goes after the rule.** Emitting it next to the declaration nests an
-at-rule inside the rule and splits it: everything after `border-radius` lands below the
+**Why `@supports` goes after the rule.** Emitting it next to the declaration would nest
+an at-rule inside the rule and split it: everything after `border-radius` lands below the
 `@supports` block. The plugin instead appends a sibling `@supports` holding a rule with
 the same selector, so the original rule stays intact and the override wins by source
 order at equal specificity.
@@ -87,10 +86,10 @@ paths against each declaration's source file and warns ("A PostCSS plugin did no
 so nodes are built by whichever PostCSS instance runs the plugin and `postcss` stays a
 peer dependency.
 
-**Why ESM.** The plugin used to be a local `.cjs` file because a Next.js config named
-plugins by path and loaded them through Node's CommonJS loader. Configs that import their
-plugins, as Vite's do, load ESM fine, and a Vite build produces byte-identical CSS from
-this package and from the old `.cjs`.
+**Why ESM, not CommonJS.** PostCSS configs that import their plugins, Vite's included,
+load ESM directly, and Node 20.19+ can `require()` it, so a CommonJS build would only be
+a second output to keep in sync. Loaders that take plugins by path and `require()` them
+(Next.js does) get the module namespace, `{ default }`, back; that setup is untested.
 
 ## Release
 
